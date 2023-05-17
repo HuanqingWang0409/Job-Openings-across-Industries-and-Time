@@ -1,0 +1,70 @@
+---
+title: "Report of Number of Job Openings across Industries and Time"
+author: "Huanqing Wang"
+date: "2023-04-01"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r cars}
+data=read.table("job openings.txt",header = T,sep=",")
+series=c("JTS110099000000000JOL","JTS230000000000000JOL","JTS320000000000000JOL","JTS340000000000000JOL","JTS420000000000000JOL","JTS440000000000000JOL","JTS480099000000000JOL","JTS510000000000000JOL","JTS520000000000000JOL","JTS530000000000000JOL","JTS540099000000000JOL","JTS610000000000000JOL","JTS620000000000000JOL","JTS710000000000000JOL","JTS720000000000000JOL","JTS810000000000000JOL","JTS910000000000000JOL","JTS923000000000000JOL","JTS929000000000000JOL")
+industry=c("Mining and logging","Construction","Durable goods manufacturing","Nondurable goods manufacturing","Wholesale trade","Retail trade","Transportation, warehousing, and utilities","Information","Finance and insurance","Real estate and rental and leasing","Professional and business services","Educational services","Health care and social assistance","Arts, entertainment, and recreation","Accommodation and food services","Other services","Federal","State and local government education","State and local government, excluding education")
+
+for(k in 1:length(series)){
+  index=which(data$Industry==series[k])
+  data$Industry=replace(data$Industry,index,industry[k])
+}
+
+data <- data %>% transmute(Year,Month=as.numeric(gsub('M','',Period)),Industry,Value)
+data_year <- data %>% filter(Year>2000,Year<2023) %>% group_by(Year, Industry) %>% summarise(Total=sum(Value))
+temp = data_year %>% slice_max(Total,n=3)
+write.csv(data_year,"summary.csv",row.names = F)
+```
+
+```{r}
+data_year2 = data_year
+index = which(data_year2$Industry %in% c("Durable goods manufacturing","Nondurable goods manufacturing"))
+data_year2$Industry[index] = "Manufacturing"
+
+index = which(data_year2$Industry %in% c("Wholesale trade","Retail trade","Transportation, warehousing, and utilities"))
+data_year2$Industry[index] = "Trade, transportation, and utilities"
+
+index = which(data_year2$Industry %in% c("Finance and insurance","Real estate and rental and leasing"))
+data_year2$Industry[index] = "Financial activities"
+
+index = which(data_year2$Industry %in% c("Educational services","Health care and social assistance"))
+data_year2$Industry[index] = "Education and health services"
+
+index = which(data_year2$Industry %in% c("Arts, entertainment, and recreation","Accommodation and food services"))
+data_year2$Industry[index] = "Leisure and hospitality"
+
+index = which(data_year2$Industry %in% c("State and local government education","State and local government, excluding education"))
+data_year2$Industry[index] = "State and local government"
+write.csv(data_year2,"summary2.csv",row.names = F)
+
+```
+
+```{r}
+data_diff=filter(data_year, Year==2022)[,2:3]
+data_diff[,2] = (data_diff[,2]-filter(data_year, Year==2021)[,3])/filter(data_year, Year==2021)[,3]*100
+colnames(data_diff)[2]="Percentage Change"
+write.csv(data_diff,"difference.csv",row.names = F)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
